@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"io"
 	"net/http"
 	"io/ioutil"
@@ -48,5 +49,14 @@ func (this *fudocs) PUT(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *fudocs) DELETE(w http.ResponseWriter, r *http.Request) {
-
+	var result struct {
+		Error string
+	}
+	err := os.Remove(this.Location + r.URL.Path + ".md")
+	result.Error = ""
+	if err != nil {
+		result.Error = "os.Remove: " + err.Error()
+	}
+	b, _ := json.Marshal(result)
+	io.WriteString(w, string(b))
 }
