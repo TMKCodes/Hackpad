@@ -26,8 +26,8 @@ func (this *fudocs) GET(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		result.Error = "ioutil.Readfile: " + err.Error()
 	}
-	b, _ := json.Marshal(result);
-	io.WriteString(w, string(b));
+	b, _ := json.Marshal(result)
+	io.WriteString(w, string(b))
 }
 
 func (this *fudocs) POST(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +35,16 @@ func (this *fudocs) POST(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *fudocs) PUT(w http.ResponseWriter, r *http.Request) {
-
+	var result struct {
+		Error string
+	}
+	err := ioutil.WriteFile(this.Location + r.URL.Path + ".md", []byte(r.FormValue("File")), 0644)
+	result.Error = ""
+	if err != nil {
+		result.Error = "ioutil.WriteFile: " + err.Error()
+	}
+	b, _ := json.Marshal(result)
+	io.WriteString(w, string(b))
 }
 
 func (this *fudocs) DELETE(w http.ResponseWriter, r *http.Request) {
