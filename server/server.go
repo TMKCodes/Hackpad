@@ -38,8 +38,8 @@ func handler(w http.ResponseWriter, r  *http.Request) {
 		fudocs.GET(w, r)
 	case "HEAD":
 		io.WriteString(w, "")
-	case "POST":
-		fudocs.POST(w, r)
+	case "PATCH":
+		fudocs.PATCH(w, r)
 	case "PUT":
 		fudocs.PUT(w, r)
 	case "DELETE":
