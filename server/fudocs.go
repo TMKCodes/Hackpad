@@ -4,6 +4,7 @@ import (
 	"os"
 	"io"
 	"time"
+	"strings"
 	"strconv"
 	"os/exec"
 	"net/http"
@@ -13,104 +14,83 @@ import (
 
 type fudocs struct {
 	Location string
+	Session *session
 }
 
-func newFudocs(Location string) *fudocs {
-	return &fudocs{Location : Location}
+func newFudocs(location string, session *session) *fudocs {
+	return &fudocs{Location : location, Session : session}
 }
 
 func (this *fudocs) Handler(w http.ResponseWriter, r  *http.Request) {
 	switch r.Method {
-	case "":
-		this.GET(w, r)
+	case "POST":
+		this.POST(w, r)
 	case "GET":
 		this.GET(w, r)
 	case "PUT":
 		this.PUT(w, r)
-	case "POST":
-		this.POST(w, r)
 	case "DELETE":
 		this.DELETE(w, r)
 	default:
-		io.WriteString(w, "Wrong HTTP method.\r\n")
+		http.Error(w, "Method Not Allowed", 405)
 	}
 }
 
-
-func (this *fudocs) GET(w http.ResponseWriter, r *http.Request) {
-	var result struct {
-		File string
-		Error string
-	}
-	if r.URL.Path == "/" {
-		result.File = ""
-		result.Error = "No root file"
-		b, _ := json.Marshal(result)
-		io.WriteString(w, string(b))
+func (this *fudocs) POST(w http.ResponseWriter, r *http.Request) {
+	// confirm that the session key is valid
+	path := strings.Replace(r.URL.Path, "/docs", "", -1)
+	err := ioutil.WriteFile(this.Location + path + ".md", []byte(r.FormValue("File")), 0644)
+	if err != nil {
+		http.Error(w, "Not Found", 404)
 		return
 	}
-	file, err := ioutil.ReadFile(this.Location + r.URL.Path + ".md")
+	// add the file name to database with owner
+	http.Error(w, "Created", 201)
+}
+
+func (this *fudocs) GET(w http.ResponseWriter, r *http.Request) {
+	path := strings.Replace(r.URL.Path, "/docs", "", -1)
+	var result struct {
+		File string
+	}
+	if path == "/" {
+		http.Error(w, "Not Found", 404)
+		return
+	}
+	file, err := ioutil.ReadFile(this.Location + path + ".md")
 	result.File = string(file)
-	result.Error = ""
 	if err != nil {
-		result.Error = "ioutil.Readfile: " + err.Error()
+		http.Error(w, "Not Found", 404)
+		return
 	}
 	b, _ := json.Marshal(result)
 	io.WriteString(w, string(b))
 }
 
 func (this *fudocs) PUT(w http.ResponseWriter, r *http.Request) {
-	var result struct {
-		Error string
-	}
+	// confirm that the session key is valid and confirm that the session use is owner of the file
+	path := strings.Replace(r.URL.Path, "/docs", "", -1)
 	t := strconv.FormatInt(time.Now().Unix(), 10)
-	err := ioutil.WriteFile(this.Location + r.URL.Path + ".md.patch-" + t, []byte(r.FormValue("Patch")), 0644)
-	result.Error = ""
+	err := ioutil.WriteFile(this.Location + path + ".md.patch-" + t, []byte(r.FormValue("Patch")), 0644)
 	if err != nil {
-		result.Error = "ioutil.WriteFile: " + err.Error()
-		b, _ := json.Marshal(result)
-		io.WriteString(w, string(b))
+		http.Error(w, "Not Found", 404)
 		return
 	}
-	err = exec.Command("patch", this.Location + r.URL.Path + ".md", this.Location + r.URL.Path + ".md.patch-" + t).Run()
+	err = exec.Command("patch", this.Location + path + ".md", this.Location + path + ".md.patch-" + t).Run()
 	if err != nil {
-		result.Error = "exec.Command: " + err.Error()
-		b, _ := json.Marshal(result)
-		io.WriteString(w, string(b))
+		http.Error(w, "", 500)
 		return
 	}
-	b, _ := json.Marshal(result)
-	io.WriteString(w, string(b))
-}
-
-func (this *fudocs) POST(w http.ResponseWriter, r *http.Request) {
-	var result struct {
-		Error string
-	}
-	err := ioutil.WriteFile(this.Location + r.URL.Path + ".md", []byte(r.FormValue("File")), 0644)
-	result.Error = ""
-	if err != nil {
-		result.Error = "ioutil.WriteFile: " + err.Error()
-		b, _ := json.Marshal(result)
-		io.WriteString(w, string(b))
-		return
-	}
-	b, _ := json.Marshal(result)
-	io.WriteString(w, string(b))
+	http.Error(w, "OK", 200)
 }
 
 func (this *fudocs) DELETE(w http.ResponseWriter, r *http.Request) {
-	var result struct {
-		Error string
-	}
-	err := os.Remove(this.Location + r.URL.Path + ".md")
-	result.Error = ""
+	// confirm that the session key is valid and confirm that the session user is owner of the file
+	path := strings.Replace(r.URL.Path, "/docs", "", -1)
+	err := os.Remove(this.Location + path + ".md")
 	if err != nil {
-		result.Error = "os.Remove: " + err.Error()
-		b, _ := json.Marshal(result)
-		io.WriteString(w, string(b))
+		http.Error(w, "Not Found", 404)
 		return
 	}
-	b, _ := json.Marshal(result)
-	io.WriteString(w, string(b))
+	http.Error(w, "OK", 200)
 }

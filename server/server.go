@@ -37,10 +37,10 @@ func main() {
 	if err != nil {
 		log.Fatal("sql.Open: ", err);
 	}
-	fudocs := newFudocs(config.Location)
-	http.HandleFunc("/", fudocs.Handler)
 	session := newSession(database)
-	http.HandleFunc("/session", session.Handler)
+	http.HandleFunc("/session/", session.Handler)
+	fudocs := newFudocs(config.Location, session)
+	http.HandleFunc("/docs/", fudocs.Handler)
 	if config.CertFile == "" && config.KeyFile == "" {
 		http.ListenAndServe(config.HTTPAddr, nil)
 	} else {
