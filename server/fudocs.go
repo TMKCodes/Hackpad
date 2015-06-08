@@ -25,10 +25,10 @@ func (this *fudocs) Handler(w http.ResponseWriter, r  *http.Request) {
 		this.GET(w, r)
 	case "GET":
 		this.GET(w, r)
-	case "PATCH":
-		this.PATCH(w, r)
 	case "PUT":
 		this.PUT(w, r)
+	case "POST":
+		this.POST(w, r)
 	case "DELETE":
 		this.DELETE(w, r)
 	default:
@@ -59,7 +59,7 @@ func (this *fudocs) GET(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(b))
 }
 
-func (this *fudocs) PATCH(w http.ResponseWriter, r *http.Request) {
+func (this *fudocs) PUT(w http.ResponseWriter, r *http.Request) {
 	var result struct {
 		Error string
 	}
@@ -83,7 +83,7 @@ func (this *fudocs) PATCH(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(b))
 }
 
-func (this *fudocs) PUT(w http.ResponseWriter, r *http.Request) {
+func (this *fudocs) POST(w http.ResponseWriter, r *http.Request) {
 	var result struct {
 		Error string
 	}

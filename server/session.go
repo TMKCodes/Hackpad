@@ -17,10 +17,14 @@ func newSession(database *sql.DB) *session {
 
 func (this *session) Handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "PUT":
+	case "":
+		this.GET(w, r)
+	case "GET":
+		this.GET(w, r)
+	case "POST":
 		this.POST(w, r)
-	case "PATCH":
-		this.PATCH(w, r)
+	case "PUT":
+		this.PUT(w, r)
 	case "DELETE":
 		this.DELETE(w, r)
 	default:
@@ -28,7 +32,7 @@ func (this *session) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (this *session) PUT(w http.ResponseWriter, r *http.Request) {
+func (this *session) POST(w http.ResponseWriter, r *http.Request) {
 	var result struct {
 		Error string
 	}
@@ -43,7 +47,7 @@ func (this *session) PUT(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (this *session) PATCH(w http.ResponseWriter, r *http.Request) {
+func (this *session) PUT(w http.ResponseWriter, r *http.Request) {
 
 }
 
