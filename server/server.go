@@ -1,17 +1,20 @@
 package main
 
 import (
-	"io"
 	"log"
 	"net/http"
 	"io/ioutil"
+	"database/sql"
 	"encoding/json"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type configuration struct {
-	Addr string `json:"Addr"`
+	HTTPAddr string `json:"HTTPAddr"`
+	HTTPSAddr string `json:"HTTPSAddr"`
 	CertFile string `json:"CertFile"`
 	KeyFile string `json:"KeyFile"`
+	Sqlite string `json:"Sqlite"`
 	Location string `json:"Location"`
 }
 
@@ -28,39 +31,20 @@ func newConfig(filename string) *configuration {
 	return &config
 }
 
-func handler(w http.ResponseWriter, r  *http.Request) {
-	config := newConfig(".fudocs.conf")
-	fudocs := newFudocs(config.Location)
-	switch r.Method {
-	case "":
-		fudocs.GET(w, r)
-	case "GET":
-		fudocs.GET(w, r)
-	case "HEAD":
-		io.WriteString(w, "")
-	case "PATCH":
-		fudocs.PATCH(w, r)
-	case "PUT":
-		fudocs.PUT(w, r)
-	case "DELETE":
-		fudocs.DELETE(w, r)
-	default:
-		io.WriteString(w, "Wrong HTTP method.\n")
-	}
-}
-
 func main() {
 	config := newConfig(".fudocs.conf")
-	http.HandleFunc("/", handler)
+	database, err := sql.Open("sqlite3", config.Sqlite)
+	if err != nil {
+		log.Fatal("sql.Open: ", err);
+	}
+	fudocs := newFudocs(config.Location)
+	http.HandleFunc("/", fudocs.Handler)
+	session := newSession(database)
+	http.HandleFunc("/session", session.Handler)
 	if config.CertFile == "" && config.KeyFile == "" {
-		err := http.ListenAndServe(config.Addr, nil)
-		if err != nil {
-			log.Fatal("http.ListenAndServe: ", err)
-		}
+		http.ListenAndServe(config.HTTPAddr, nil)
 	} else {
-		err := http.ListenAndServeTLS(config.Addr, config.CertFile, config.KeyFile, nil)
-		if err != nil {
-			log.Fatal("http.ListenAndServeTLS: ", err)
-		}
+		go http.ListenAndServe(config.HTTPAddr, nil)
+		go http.ListenAndServeTLS(config.HTTPSAddr, config.CertFile, config.KeyFile, nil)
 	}
 }
