@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"errors"
 	"strings"
 	"strconv"
 	"net/http"
@@ -21,27 +22,6 @@ func newSession(database *sql.DB) *session {
 	return &session{Database : database}
 }
 
-func (this *session) Confirm(session string) bool {
-	decoded, err := base64.StdEncoding.DecodeString(session)
-	if err != nil {
-		return false
-	}
-	data := strings.Split(string(decoded), "||")
-	var key string
-	err = this.Database.QueryRow("SELECT key FROM session WHERE id = $1;", data[0]).Scan(&key)
-	if err == sql.ErrNoRows {
-		return false
-	}
-	if err != nil {
-		return false
-	}
-	if key == data[1] {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (this *session) Handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
@@ -55,6 +35,31 @@ func (this *session) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (this *session) Confirm(session string) bool {
+	decoded, err := base64.StdEncoding.DecodeString(session)
+	if err != nil {
+		return false
+	}
+	data := strings.Split(string(decoded), "||")
+	var key string
+	id, err := strconv.ParseInt(data[0], 10, 64);
+	if err != nil {
+		return false;
+	}
+	err = this.Database.QueryRow("SELECT key FROM session WHERE id = ?;", id).Scan(&key)
+	if err == sql.ErrNoRows {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	if key == data[1] {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (this *session) Generate(n int) string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 	b := make([]rune, n)
@@ -62,6 +67,23 @@ func (this *session) Generate(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func (this *session) Whos(session string) (int64, error) {
+	if this.Confirm(session) == false {
+		return 0, errors.New("Failed to confirm session.")
+	}
+	decoded, err := base64.StdEncoding.DecodeString(session)
+	if err != nil {
+		return 0, err
+	}
+	data := strings.Split(string(decoded), "||")
+	var account int64
+	err = this.Database.QueryRow("SELECT account FROM session WHERE id = ? AND key = ?;", data[0], data[1]).Scan(&account)
+	if err != nil {
+		return 0, err
+	}
+	return account, nil
 }
 
 func (this *session) POST(w http.ResponseWriter, r *http.Request) {
@@ -73,9 +95,9 @@ func (this *session) POST(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	var id int64
+	var account int64
 	var password string
-	err := this.Database.QueryRow("SELECT id, password FROM account WHERE username = $1;", r.FormValue("username")).Scan(&id, &password)
+	err := this.Database.QueryRow("SELECT id, password FROM account WHERE username = ?;", r.FormValue("username")).Scan(&account, &password)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Not Found", 404)
 		return
@@ -91,7 +113,7 @@ func (this *session) POST(w http.ResponseWriter, r *http.Request) {
 	}
 	// create random session key and save it to the database and send as json to client.
 	key := this.Generate(24);
-	_, err = this.Database.Exec("INSERT INTO session (account, key) VALUES ($1, $2);", id, key)
+	_, err = this.Database.Exec("INSERT INTO session (account, key) VALUES (?, ?);", account, key)
 	if err != nil {
 		http.Error(w, "Internal Server Error", 500)
 		return
@@ -99,17 +121,83 @@ func (this *session) POST(w http.ResponseWriter, r *http.Request) {
 	var result struct {
 		Session string
 	}
-
-	result.Session = base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{strconv.FormatInt(id, 10), "||", key}, "")))
+	var session int64
+	err = this.Database.QueryRow("SELECT id FROM session WHERE account = ? AND key = ?;", account, key).Scan(&session)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Not Found", 404)
+		return
+	}
+	if err != nil {
+		http.Error(w, "Internal Server Error", 500)
+		return
+	}
+	result.Session = base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{strconv.FormatInt(session, 10), "||", key}, "")))
 	b, _ := json.Marshal(result)
 	io.WriteString(w, string(b))
 }
 
 func (this *session) PUT(w http.ResponseWriter, r *http.Request) {
 	// confirm that session key is valid, create new key and replace the confirmed key in the database and send the new key to the client.
+	if r.FormValue("session") == "" {
+		http.Error(w, "Bad Request, r.FormValue(\"session\")", 400)
+		return
+	}
+	if this.Confirm(r.FormValue("session")) == false {
+		http.Error(w, "Not Found, this.Confirm(r.FormValue(\"session\")", 404)
+		return
+	}
+	decoded, err := base64.StdEncoding.DecodeString(r.FormValue("session"))
+	if err != nil {
+		http.Error(w, "Bad Request, base64.StdEncoding.DecodeString(r.FormValue(\"session\")", 400)
+		return
+	}
+	data := strings.Split(string(decoded), "||")
+	key := this.Generate(24);
+	session, err := strconv.ParseInt(data[0], 10, 64)
+	if err != nil {
+		http.Error(w, "Internal Server Error", 500)
+		return
+	}
+	_, err = this.Database.Exec("UPDATE session SET key = ? WHERE id = ?;", key, session)
+	if err != nil {
+		http.Error(w, "Internal Server Error", 500)
+		return
+	}
+	var result struct {
+		Session string
+	}
+	result.Session = base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{data[0], "||", key}, "")))
+	b, _ := json.Marshal(result)
+	io.WriteString(w, string(b))
+
 }
 
 func (this *session) DELETE(w http.ResponseWriter, r *http.Request) {
 	// confirm that session key is valid and delete the session key from database.
+	if r.FormValue("session") == "" {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if this.Confirm(r.FormValue("session")) == false {
+		http.Error(w, "Not Found", 404)
+		return
+	}
+	decoded, err := base64.StdEncoding.DecodeString(r.FormValue("session"))
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	data := strings.Split(string(decoded), "||")
+	session, err := strconv.ParseInt(data[0], 10, 64)
+	if err != nil {
+		http.Error(w, "Internal Server Error", 500)
+		return
+	}
+	_, err = this.Database.Exec("DELETE FROM session WHERE id = ? AND key = ?;", session, data[1])
+	if err != nil {
+		http.Error(w, "Internal Server Error", 500)
+		return
+	}
+	http.Error(w, "OK", 200)
 }
 

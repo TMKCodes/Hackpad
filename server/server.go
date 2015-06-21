@@ -41,6 +41,8 @@ func main() {
 	http.HandleFunc("/session/", session.Handler)
 	fudocs := newFudocs(config.Location, session)
 	http.HandleFunc("/docs/", fudocs.Handler)
+	account := newAccount(database, session)
+	http.HandleFunc("/account/", account.Handler)
 	if config.CertFile == "" && config.KeyFile == "" {
 		http.ListenAndServe(config.HTTPAddr, nil)
 	} else {

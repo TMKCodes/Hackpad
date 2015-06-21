@@ -1,14 +1,15 @@
 -- This is a Fudocs table creation sql file
 
 CREATE TABLE IF NOT EXISTS account (
-	id INT NOT NULL PRIMARY KEY,
+	id INTEGER PRIMARY KEY,
 	username TEXT NOT NULL,
-	password TEXT NOT NULL
+	password TEXT NOT NULL,
+	email TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS session (
-	id INT NOT NULL PRIMARY KEY,
-	account INT NOT NULL,
+	id INTEGER PRIMARY KEY,
+	account INTEGER NOT NULL,
 	key TEXT NOT NULL,
 	FOREIGN KEY (account) REFERENCES account(id)
 );
