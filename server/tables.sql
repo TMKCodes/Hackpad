@@ -14,4 +14,24 @@ CREATE TABLE IF NOT EXISTS session (
 	FOREIGN KEY (account) REFERENCES account(id)
 );
 
+CREATE TABLE IF NOT EXISTS document (
+	id INTEGER PRIMARY KEY,
+	account INTEGER NOT NULL,
+	path TEXT NOT NULL,
+	data BLOB NOT NULL,
+	created INTEGER NOT NULL,
+	updated INTEGER NOT NULL,
+	FOREIGN KEY (account) REFERENCES account(id)
+);
 
+CREATE TABLE IF NOT EXISTS history (
+	id INTEGER PRIMARY KEY,
+	account INTEGER NOT NULL,
+	document INTEGER NOT NULL,
+	change TEXT NOT NULL,
+	at INTEGER NOT NULL,
+	timestamp INTEGER NOT NULL,
+	FOREIGN KEY (account) REFERENCES account(id)
+	FOREIGN KEY (document) REFERENCES document(id)
+
+);

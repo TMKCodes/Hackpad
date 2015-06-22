@@ -1,24 +1,27 @@
 package main
 
 import (
-	"os"
+	//"os"
 	"io"
 	"time"
 	"strings"
-	"strconv"
-	"os/exec"
+	//"strconv"
+	//"os/exec"
 	"net/http"
-	"io/ioutil"
+	//"io/ioutil"
+	"database/sql"
 	"encoding/json"
+	_ "github.com/mattn/go-sqlite3"
+
 )
 
 type fudocs struct {
-	Location string
+	Database *sql.DB
 	Session *session
 }
 
-func newFudocs(location string, session *session) *fudocs {
-	return &fudocs{Location : location, Session : session}
+func newFudocs(database *sql.DB, session *session) *fudocs {
+	return &fudocs{Database : database, Session : session}
 }
 
 func (this *fudocs) Handler(w http.ResponseWriter, r  *http.Request) {
@@ -38,59 +41,192 @@ func (this *fudocs) Handler(w http.ResponseWriter, r  *http.Request) {
 
 func (this *fudocs) POST(w http.ResponseWriter, r *http.Request) {
 	// confirm that the session key is valid
-	path := strings.Replace(r.URL.Path, "/docs", "", -1)
-	err := ioutil.WriteFile(this.Location + path + ".md", []byte(r.FormValue("File")), 0644)
-	if err != nil {
-		http.Error(w, "Not Found", 404)
+	if r.FormValue("file") == "" {
+		http.Error(w, "Bad Request", 400)
 		return
 	}
-	// add the file name to database with owner
-	http.Error(w, "Created", 201)
+	if this.Session.Confirm(r.FormValue("session")) == false {
+		http.Error(w, "Forbidden", 403)
+		return
+	}
+	who, err := this.Session.Whos(r.FormValue("session"));
+	path := strings.Replace(r.URL.Path, "/docs", "", -1)
+	var document int64
+	err = this.Database.QueryRow("SELECT id FROM document WHERE path = ?;", path).Scan(&document)
+	if err == sql.ErrNoRows {
+		_, err = this.Database.Exec("INSERT INTO document (account, path, data, created, updated) VALUES (?, ?, ?, ?, ?);", who, path, r.FormValue("file"), time.Now().Unix(), time.Now().Unix())
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		http.Error(w, "Created", 201)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	http.Error(w, "Entity Already Exists", 422)
 }
 
 func (this *fudocs) GET(w http.ResponseWriter, r *http.Request) {
-	path := strings.Replace(r.URL.Path, "/docs", "", -1)
-	var result struct {
-		File string
+	if r.FormValue("long-pull") != "" {
+		path := strings.Replace(r.URL.Path, "/docs", "", -1)
+		var document struct {
+			ID int64
+			Updated int64
+		}
+		err := this.Database.QueryRow("SELECT id, updated FROM document WHERE path = ?;", path).Scan(&document.ID, &document.Updated)
+		if err == sql.ErrNoRows {
+			http.Error(w, "Not Found", 404)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		end := time.Now().Unix() + 30
+		patchFound := false
+		for time.Now().Unix() <= end {
+			var history struct {
+				ID int64
+				Account int64
+				Document int64
+				Change string
+				At int64
+				Timestamp int64
+			}
+			rows, err := this.Database.Query("SELECT * FROM history WHERE document = ? AND timestamp > ?;", document.ID, document.Updated)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+			defer rows.Close()
+			if rows.Next() == true {
+				err = rows.Scan(&history.ID, &history.Account, &history.Document, &history.Change, &history.At, &history.Timestamp)
+				if err != nil {
+					http.Error(w, "Internal Server Error", 500)
+					return
+				}
+			} else {
+				time.Sleep(time.Second)
+				continue
+			}
+			if rows.Err() != nil {
+				http.Error(w, "Internal Server Error", 500)
+				return
+			}
+			b, _ := json.Marshal(history);
+			io.WriteString(w, string(b))
+			patchFound = true
+			break
+		}
+		if patchFound != true {
+			http.Error(w, "Not Found", 404)
+			return
+		}
+	} else {
+		path := strings.Replace(r.URL.Path, "/docs", "", -1)
+		var document struct {
+			Account int64
+			Path string
+			Data string
+			Created int64
+			Updated int64
+		}
+		err := this.Database.QueryRow("SELECT account, path, data, created, updated FROM document WHERE path = ?;", path).Scan(&document.Account, &document.Path, &document.Data, &document.Created, &document.Updated)
+		if err == sql.ErrNoRows {
+			http.Error(w, "Not Found", 404)
+			return
+		}
+		if err != nil {
+			http.Error(w, "Internal Server Error", 500)
+			return
+		}
+		b, _ := json.Marshal(document);
+		io.WriteString(w, string(b))
 	}
-	if path == "/" {
-		http.Error(w, "Not Found", 404)
-		return
-	}
-	file, err := ioutil.ReadFile(this.Location + path + ".md")
-	result.File = string(file)
-	if err != nil {
-		http.Error(w, "Not Found", 404)
-		return
-	}
-	b, _ := json.Marshal(result)
-	io.WriteString(w, string(b))
 }
 
 func (this *fudocs) PUT(w http.ResponseWriter, r *http.Request) {
 	// confirm that the session key is valid and confirm that the session use is owner of the file
-	path := strings.Replace(r.URL.Path, "/docs", "", -1)
-	t := strconv.FormatInt(time.Now().Unix(), 10)
-	err := ioutil.WriteFile(this.Location + path + ".md.patch-" + t, []byte(r.FormValue("Patch")), 0644)
-	if err != nil {
-		http.Error(w, "Not Found", 404)
+	if r.FormValue("change") == "" {
+		http.Error(w, "Bad Request", 400)
 		return
 	}
-	err = exec.Command("patch", this.Location + path + ".md", this.Location + path + ".md.patch-" + t).Run()
+	if r.FormValue("at") == "" {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if r.FormValue("session") == "" {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if this.Session.Confirm(r.FormValue("session")) == false {
+		http.Error(w, "Forbidden", 403)
+		return
+	}
+	who, err := this.Session.Whos(r.FormValue("session"))
+	path := strings.Replace(r.URL.Path, "/docs", "", -1)
+	var document struct {
+		ID int64
+		Account int64
+		Path string
+		Data string
+		Created int64
+		Updated int64
+	}
+	err = this.Database.QueryRow("SELECT * FROM document WHERE path = ?;", path).Scan(&document.ID, &document.Account, &document.Path, &document.Data, &document.Created, &document.Updated);
 	if err != nil {
-		http.Error(w, "", 500)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	_, err = this.Database.Exec("INSERT INTO history (account, document, change, at, timestamp) VALUES (?,?,?,?,?);", who, document.ID, r.FormValue("change"), r.FormValue("at"), time.Now().Unix())
+	if err != nil {
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	http.Error(w, "OK", 200)
 }
 
 func (this *fudocs) DELETE(w http.ResponseWriter, r *http.Request) {
-	// confirm that the session key is valid and confirm that the session user is owner of the file
+	if r.FormValue("session") == "" {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if this.Session.Confirm(r.FormValue("session")) == false {
+		http.Error(w, "Forbidden", 403)
+		return
+	}
+	who, err := this.Session.Whos(r.FormValue("session"))
 	path := strings.Replace(r.URL.Path, "/docs", "", -1)
-	err := os.Remove(this.Location + path + ".md")
-	if err != nil {
+	var document struct {
+		ID int64
+		Account int64
+		Path string
+		Data string
+		Created int64
+		Updated int64
+	}
+	err = this.Database.QueryRow("SELECT * FROM document WHERE path = ?;", path).Scan(&document.ID, &document.Account, &document.Path, &document.Data, &document.Created, &document.Updated)
+	if err == sql.ErrNoRows {
 		http.Error(w, "Not Found", 404)
 		return
 	}
-	http.Error(w, "OK", 200)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	if document.Account == who {
+		_, err = this.Database.Exec("DELETE FROM document WHERE id = ?;", document.ID)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		http.Error(w, "OK", 200)
+		return
+	} else {
+		http.Error(w, "Forbidden", 403)
+		return
+	}
 }

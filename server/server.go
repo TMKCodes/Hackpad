@@ -39,7 +39,7 @@ func main() {
 	}
 	session := newSession(database)
 	http.HandleFunc("/session/", session.Handler)
-	fudocs := newFudocs(config.Location, session)
+	fudocs := newFudocs(database, session)
 	http.HandleFunc("/docs/", fudocs.Handler)
 	account := newAccount(database, session)
 	http.HandleFunc("/account/", account.Handler)
