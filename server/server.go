@@ -15,7 +15,6 @@ type configuration struct {
 	CertFile string `json:"CertFile"`
 	KeyFile string `json:"KeyFile"`
 	Sqlite string `json:"Sqlite"`
-	Location string `json:"Location"`
 }
 
 func newConfig(filename string) *configuration {
