@@ -16,6 +16,20 @@ sqlite3 server/.fudocs.db < server/tables.sql
 
 If you want to use another location from the server folder for storing the database file or another name for the database file then you also must do the corresponding changes in `server/.fudocs.conf`
 
+### Server configuration
+
+The `server/.fudocs.conf` file contains the server configuration in json.
+
+| Parameter | Meaning                                 | defaults |
+|-----------|-----------------------------------------|----------|
+| HTTPAddr  | HTTP address and port                   | :10080   |
+| HTTPSAddr | HTTPS address and port                  | :10443   |
+| CertFile  | Certificate file location for HTTPS     |          |
+| KeyFile   | Certificate key file location for HTTPS |          |
+| Sqlite    | SQLite3 database file                   | session  |
+
+
+
 ### Account
 
 | Method | URL         | P1       | P2       | P3       | P4    | Success Return                                      |
