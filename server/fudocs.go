@@ -1,14 +1,10 @@
 package main
 
 import (
-	//"os"
 	"io"
 	"time"
 	"strings"
-	//"strconv"
-	//"os/exec"
 	"net/http"
-	//"io/ioutil"
 	"database/sql"
 	"encoding/json"
 	_ "github.com/mattn/go-sqlite3"

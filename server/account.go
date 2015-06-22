@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"database/sql"
 	"encoding/json"
-	//"encoding/base64"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 )
