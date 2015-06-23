@@ -21,6 +21,7 @@ func newAccount(database *sql.DB, session *session) *account {
 }
 
 func (this *account) Handler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*");
 	switch r.Method {
 	case "POST":
 		this.POST(w, r)

@@ -21,6 +21,7 @@ func newFudocs(database *sql.DB, session *session) *fudocs {
 }
 
 func (this *fudocs) Handler(w http.ResponseWriter, r  *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*");
 	switch r.Method {
 	case "POST":
 		this.POST(w, r)
