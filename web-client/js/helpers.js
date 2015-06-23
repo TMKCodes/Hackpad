@@ -14,6 +14,7 @@
 				return variables[i][1];
 			}
 		}
+		return false;
 	}
 	
 }(jQuery));

@@ -1,0 +1,43 @@
+html {
+	font-family: Sans-Serif;
+	background-color: rgba(255,250,250, 1)
+}
+
+input {
+	border: 5px solid white;
+	-webkit-box-shadow: inset 0 0 8px rgba(0,0,0,0.1), 0 0 16px rgba(0,0,0,0.1);
+	-moz-box-shadow: inset 0 0 8px rgba(0,0,0,0.1), 0 0 16px rgba(0,0,0,0.1);
+	-box-shadow: inset 0 0 8px rgba(0,0,0,0.1), 0 0 16px rgba(0,0,0,0.1);
+	padding: 2px 6px 2px 6px;
+	margin: 0 0 10px 0;
+	background-color: rgba(255, 250, 250, 0.9)
+	-webkit-box-sizing: content-box;
+	-moz-box-sizing: content-box;
+	box-sizing: content-box;
+
+}
+
+#authentication-container {
+	margin-left: auto;
+	margin-right: auto;
+	width: 1024px;
+}
+
+
+#authentication-header {
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+}
+
+#authentication-form {
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+	overflow: none;
+	max-width: 380px;
+}
+
+#authentication-form > input {
+	width: calc(100% - 24px);
+}
