@@ -21,17 +21,24 @@ var application = {
 			$(passwordInput).attr("name", "password");
 			$(passwordInput).attr("type", "password");
 
-			var submitButton = $.create("input", "authentication-form-submit-button");
-			$(submitButton).attr("value", "Kirjaudu Fudocsiin.");
-			$(submitButton).attr("name", "submit");
-			$(submitButton).attr("type", "submit");
+			var submitInput = $.create("input", "authentication-form-submit-input");
+			$(submitInput).attr("value", "Kirjaudu ja dokumentoi!");
+			$(submitInput).attr("name", "submit");
+			$(submitInput).attr("type", "submit");
+
+			var registerationButton = $.create("input", "authentication-registeration-button"); 
+			$(registerationButton).attr("value", "Tarvitsetko käyttäjätunnuksen?");
+			$(registerationButton).attr("name", "reset");
+			$(registerationButton).attr("type", "reset");
 
 			$(form).append(usernameInput);
 			$(form).append(passwordInput);
-			$(form).append(submitButton);
+			$(form).append(submitInput);
+			$(form).append(registerationButton);
 
 			$(container).append(header);
 			$(container).append(form);
+
 
 			$("body").prepend(container);
 
