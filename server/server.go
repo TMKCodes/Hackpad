@@ -15,6 +15,7 @@ type configuration struct {
 	CertFile string `json:"CertFile"`
 	KeyFile string `json:"KeyFile"`
 	Sqlite string `json:"Sqlite"`
+	Location string `json:"client"`
 }
 
 func newConfig(filename string) *configuration {
@@ -36,6 +37,7 @@ func main() {
 	if err != nil {
 		log.Fatal("sql.Open: ", err);
 	}
+	http.Handle("/", http.FileServer(http.Dir(config.Location)))
 	session := newSession(database)
 	http.HandleFunc("/session/", session.Handler)
 	fudocs := newFudocs(database, session)
