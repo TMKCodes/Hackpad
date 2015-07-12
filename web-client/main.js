@@ -1,9 +1,14 @@
 var application = {
 	hostname : "",
+	allowHistoryPush : true,
 	authentication : {
 		open : function() {
 			$(document).attr("title", "Fudocs Kirjautuminen.");
-			history.pushState({ application : "authentication" }, "", application.hostname + "?application=authentication");
+			if(application.allowHistoryPush == true) {
+				history.pushState({ application : "authentication" }, "", application.hostname + "?application=authentication");
+			} else {
+				application.allowHistoryPush = true;
+			}
 			$("body").prepend($.createDiv("authentication-container"));
 			$("#authentication-container").append($.create("h1", "authentication-header"));
 			$("#authentication-header").html("Fudocs Markdown Editor");
@@ -34,7 +39,11 @@ var application = {
 	registeration : {
 		open : function() {
 			$(document).attr("title", "Rekisteröidy Fudocsiin.");
-			history.pushState({ application : "registeration" }, "", application.hostname + "?application=registeration");
+			if(application.allowHistoryPush == true) {
+				history.pushState({ application : "registeration" }, "", application.hostname + "?application=registeration");
+			} else {
+				application.allowHistoryPush = true;
+			}
 			$("body").prepend($.createDiv("registeration-container"));
 			$("#registeration-container").append($.create("h1", "registeration-header"));
 			$("#registeration-header").html("Rekisteröi Fudocs käyttäjätunnus.");
@@ -78,7 +87,6 @@ var application = {
 		}
 	},
 	openByState : function(state) {
-		console.log(state.application);
 		if(state.application == "authentication") {
 			application.authentication.open();
 		} else if(state.application == "registeration") {
@@ -106,7 +114,7 @@ $("document").ready(function() {
 	console.log("API Endpoint: " + config.serverEndpoint);
 	application.openByURL();
 	window.onpopstate = function(evt) {
-		history.back();
+		application.allowHistoryPush = false;
 		application.closeAll();
 		application.openByState(evt.state);
 	}
