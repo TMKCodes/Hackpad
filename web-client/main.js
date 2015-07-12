@@ -10,26 +10,39 @@ var application = {
 				application.allowHistoryPush = true;
 			}
 			$("body").prepend($.createDiv("authentication-container"));
+			$("#authentication-container").addClass("container");
 			$("#authentication-container").append($.create("h1", "authentication-header"));
 			$("#authentication-header").html("Fudocs Markdown Editor");
 			$("#authentication-container").append($.create("form", "authentication-form"));
 			$("#authentication-form").append($.createInput("authentication-form-username-input", null, { 
-					placeholder : "Käyttäjätunnus", required : "required", name : "username", type : "text"}));
+					placeholder : "Käyttäjätunnus", required : "required", name : "username", type : "text" }));
 			$("#authentication-form").append($.createInput("authentication-form-password-input", null, { 
-					placeholder : "Salasana", required : "required", name : "password", type : "password"}));
+					placeholder : "Salasana", required : "required", name : "password", type : "password" }));
 			$("#authentication-form").append($.createInput("authentication-form-submit-input", null, { 
-					value : "Kirjaudu ja dokumentoi", name : "submit", type : "submit"}));
-			$("#authentication-form").append($.createInput("authentication-registeration-button", null, { 
-					value : "Tarvitsetko käyttäjätunnuksen", name : "reset", type : "reset"}));
+					value : "Kirjaudu ja tee dokumentteja!", name : "submit", type : "submit" }));
+			$("#authentication-form").append($.createInput("authentication-form-registeration-button", null, { 
+					value : "Tarvitsetko käyttäjätunnuksen?", name : "reset", type : "reset" }));
+			$("#authentication-form").append($.createInput("authentication-form-recovery-request-button", null, {
+					value : "Oletko unohtanut käyttäjätunnuksesi?", name : "recovery-request", type : "reset" }));
 			$("#authentication-form").submit(function(evt) {
 				evt.preventDefault();
 				var session = fudocs.session.create($("#authentication-form-username-input").val(), $("#authentication-form-password-input").val());
-				console.log(session);
+				if(session != false) {
+					$.cookie("session", session);
+					application.authentication.close();
+				} else {
+					alert("Kirjautuminen epäonnistui. Tarkista käyttäjätunnus, salasana ja yritä uudestaan.");
+				}
 			});
 
-			$("#authentication-registeration-button").click(function(evt) {
+			$("#authentication-form-registeration-button").click(function(evt) {
 				application.authentication.close();
 				application.registeration.open();
+			});
+
+			$("#authentication-form-recovery-request-button").click(function(evt) {
+				application.authentication.close();
+				application.recoveryRequest.open();
 			});
 		},
 		close : function() {
@@ -45,6 +58,7 @@ var application = {
 				application.allowHistoryPush = true;
 			}
 			$("body").prepend($.createDiv("registeration-container"));
+			$("#registeration-container").addClass("container");
 			$("#registeration-container").append($.create("h1", "registeration-header"));
 			$("#registeration-header").html("Rekisteröi Fudocs käyttäjätunnus.");
 			$("#registeration-container").append($.create("form", "registeration-form"));
@@ -86,11 +100,44 @@ var application = {
 			$("#registeration-container").remove();
 		}
 	},
+	recoveryRequest : {
+		open : function() {
+			$(document).attr("title", "Käyttäjätunnuksen palautus");
+			if(application.allowHistoryPush == true) {
+				history.pushState({ application : "recovery-request" }, "", application.hostname + "?application=recovery-request");
+			} else {
+				application.allowHistoryPush = true;
+			}
+			$("body").prepend($.createDiv("recovery-request-container"));
+			$("#recovery-request-container").addClass("container");
+			$("#recovery-request-container").append($.create("h1", "recovery-request-header"));
+			$("#recovery-request-header").html("Palauta Fudocs käyttäjätunnus.");
+			$("#recovery-request-container").append($.create("form", "recovery-request-form"));
+			$("#recovery-request-form").append($.createInput("recovery-request-form-email-input", null, {
+					placeholder : "Sähköpostiosoite", required : "required", name : "email-address", type : "email" }));
+			$("#recovery-request-form").append($.createInput("recovery-request-form-submit-button", null, {
+					value : "Pyydä uusi salasana nyt!", name : "submit", type : "submit" }));
+			$("#recovery-request-form").append($.createInput("recovery-request-form-cancel-button", null, {
+					value : "Peruuta käyttäjätunnuksen palautus.", name : "cancel", type : "reset" }));
+			$("#recovery-request-form").submit(function(evt) {
+				evt.preventDefault();
+			});
+			$("#recovery-request-form-cancel-button").click(function(evt) {
+				application.recoveryRequest.close();
+				application.authentication.open();
+			});
+		},
+		close : function() {
+			$("#recovery-request-container").remove();
+		}
+	},
 	openByState : function(state) {
 		if(state.application == "authentication") {
 			application.authentication.open();
 		} else if(state.application == "registeration") {
 			application.registeration.open();
+		} else if(state.application == "recovery-request") {
+			application.recoveryRequest.open();
 		}
 	},
 	openByURL : function() {
@@ -100,11 +147,14 @@ var application = {
 			application.authentication.open();
 		} else if($.getUrlParameter("application") == "registeration") {
 			application.registeration.open();
+		} else if($.getUrlParameter("application") == "recovery-request") {
+			application.recoveryRequest.open();
 		}
 	},
 	closeAll : function() {
 		application.authentication.close();
 		application.registeration.close();
+		application.recoveryRequest.close();
 	}
 }
 
