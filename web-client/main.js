@@ -30,6 +30,7 @@ var application = {
 				if(session != false) {
 					$.cookie("session", session);
 					application.authentication.close();
+					application.editor.open();
 				} else {
 					alert("Kirjautuminen epäonnistui. Tarkista käyttäjätunnus, salasana ja yritä uudestaan.");
 				}
@@ -131,6 +132,67 @@ var application = {
 			$("#recovery-request-container").remove();
 		}
 	},
+	editor : {
+		open : function() {
+			$(document).attr("title", "Fudocs Editori");
+			if(application.allowHistoryPush == true) {
+				history.pushState({ application : "fudocs editor" }, "", application.hostname + "?application=editor");
+			} else {
+				application.allowHistoryPush = true;
+			}
+			$("body").prepend($.createDiv("editor-container"));
+			$("#editor-container").addClass("editor");
+			$("#editor-container").height($(window).height());
+			$("#editor-container").append($.createDiv("editor-menu-area"));
+			$("#editor-container").append($.createDiv("editor-edit-area"));
+			$("#editor-container").append($.createDiv("editor-display-area"));
+
+			// editor menu
+			
+
+			// editor text area
+			$("#editor-edit-area").append($.create("textarea", "editor-textarea"));
+
+			$("#editor-textarea").on("input", function(evt) {
+				var display = $("#editor-display-area").html();
+				var editor = $(this).val();
+				if(editor.length > display.length) {
+					for(var i = 0; i < editor.length; i++) {
+						if(editor[i] != display[i]) {
+							var length = editor.length - display.length;
+							var changed = "";
+							for(var x = 0; x < length; x++) {
+								changed += editor[i+x];
+							}
+							// here send changed to server
+							console.log("+" + changed);
+							break;
+						}
+					}
+				} else if(editor.length < display.length) {
+					for(var i = 0; i < display.length; i++) {
+						if(editor[i] != display[i]) {
+							var length = display.length - editor.length;
+							var changed = "";
+							for(var x = 0; x < length; x++) {
+								changed += display[i+x];
+							}
+							// here send changed to server
+							console.log("-" + changed);
+							break;
+						}
+					}
+				}
+				var converter = new showdown.Converter(),
+					text = $(this).val(),
+					html = converter.makeHtml(text);
+				$("#editor-display-area").html(html);
+			});
+		},
+		close : function() {
+			$("#editor-container").remove();
+		}
+	},
 	openByState : function(state) {
 		if(state.application == "authentication") {
 			application.authentication.open();
@@ -138,6 +200,8 @@ var application = {
 			application.registeration.open();
 		} else if(state.application == "recovery-request") {
 			application.recoveryRequest.open();
+		} else if(state.application == "editor") {
+			application.editor.open();
 		}
 	},
 	openByURL : function() {
@@ -149,12 +213,15 @@ var application = {
 			application.registeration.open();
 		} else if($.getUrlParameter("application") == "recovery-request") {
 			application.recoveryRequest.open();
+		} else if($.getUrlParameter("application") == "editor") {
+			application.editor.open();
 		}
 	},
 	closeAll : function() {
 		application.authentication.close();
 		application.registeration.close();
 		application.recoveryRequest.close();
+		application.editor.close();
 	}
 }
 
