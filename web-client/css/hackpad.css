@@ -240,6 +240,16 @@ select:hover {
 	overflow-y: scroll;
 }
 
+.editor > #editor-display-area pre {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	background-color: #f8f8f8;
+	border: 1px solid #dfdfdf;
+	margin-top: 1.5rem;
+	margin-bottom: 1.5rem;
+	padding: 0.125rem 0.3125rem 0.0625rem 0.3125rem;
+}
+
 .editor > #editor-bottom-area {
 	background-color: #483C32;
 	width: 100%;
