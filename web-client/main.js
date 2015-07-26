@@ -3,7 +3,7 @@ var application = {
 	allowHistoryPush : true,
 	authentication : {
 		open : function() {
-			$(document).attr("title", "Fudocs Kirjautuminen.");
+			$(document).attr("title", "Hackpad Kirjautuminen.");
 			if(application.allowHistoryPush == true) {
 				history.pushState({ application : "authentication" }, "", application.hostname + "?application=authentication");
 			} else {
@@ -12,7 +12,7 @@ var application = {
 			$("body").prepend($.createDiv("authentication-container"));
 			$("#authentication-container").addClass("container");
 			$("#authentication-container").append($.create("h1", "authentication-header"));
-			$("#authentication-header").html("Fudocs Markdown Editor");
+			$("#authentication-header").html("Hackpad");
 			$("#authentication-container").append($.create("form", "authentication-form"));
 			$("#authentication-form").append($.createInput("authentication-form-username-input", null, { 
 					placeholder : "Käyttäjätunnus", required : "required", name : "username", type : "text" }));
@@ -52,7 +52,7 @@ var application = {
 	},
 	registeration : {
 		open : function() {
-			$(document).attr("title", "Rekisteröidy Fudocsiin.");
+			$(document).attr("title", "Rekisteröidy Hackpadiin.");
 			if(application.allowHistoryPush == true) {
 				history.pushState({ application : "registeration" }, "", application.hostname + "?application=registeration");
 			} else {
@@ -61,7 +61,7 @@ var application = {
 			$("body").prepend($.createDiv("registeration-container"));
 			$("#registeration-container").addClass("container");
 			$("#registeration-container").append($.create("h1", "registeration-header"));
-			$("#registeration-header").html("Rekisteröi Fudocs käyttäjätunnus.");
+			$("#registeration-header").html("Rekisteröidy");
 			$("#registeration-container").append($.create("form", "registeration-form"));
 			$("#registeration-form").append($.createInput("registeration-form-username-input", null, { 
 					placeholder : "Käyttäjätunnus", required : "required", name : "username", type : "text" }));
@@ -112,12 +112,12 @@ var application = {
 			$("body").prepend($.createDiv("recovery-request-container"));
 			$("#recovery-request-container").addClass("container");
 			$("#recovery-request-container").append($.create("h1", "recovery-request-header"));
-			$("#recovery-request-header").html("Palauta Fudocs käyttäjätunnus.");
+			$("#recovery-request-header").html("Palauta käyttäjätunnus");
 			$("#recovery-request-container").append($.create("form", "recovery-request-form"));
 			$("#recovery-request-form").append($.createInput("recovery-request-form-email-input", null, {
 					placeholder : "Sähköpostiosoite", required : "required", name : "email-address", type : "email" }));
 			$("#recovery-request-form").append($.createInput("recovery-request-form-submit-button", null, {
-					value : "Pyydä uusi salasana nyt!", name : "submit", type : "submit" }));
+					value : "Pyydä käyttäjätunnuksesi nyt!", name : "submit", type : "submit" }));
 			$("#recovery-request-form").append($.createInput("recovery-request-form-cancel-button", null, {
 					value : "Peruuta käyttäjätunnuksen palautus.", name : "cancel", type : "reset" }));
 			$("#recovery-request-form").submit(function(evt) {
@@ -134,7 +134,7 @@ var application = {
 	},
 	editor : {
 		open : function(docname) {
-			$(document).attr("title", "Fudocs Editori");
+			$(document).attr("title", "Hackpad Editori");
 			if(typeof docname == "undefined") {
 				docname = fudocs.doc.generate.name(8);
 			}
@@ -260,7 +260,7 @@ var application = {
 
 $("document").ready(function() {
 	application.hostname = location.origin + location.pathname;
-	console.log("Welcome to Fudocs at " + application.hostname + ". This is developer console!");
+	console.log("Welcome to Hackpad at " + application.hostname + ". This is developer console!");
 	console.log("API Endpoint: " + config.serverEndpoint);
 	application.openByURL();
 	window.onpopstate = function(evt) {
