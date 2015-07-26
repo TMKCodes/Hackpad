@@ -59,7 +59,12 @@ func (this *docs) POST(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	http.Error(w, "Entity Already Exists", 422)
+	_, err = this.Database.Exec("UPDATE document SET data = ?, updated = ? WHERE path = ?;", r.FormValue("file"), time.Now().Unix(), path)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	http.Error(w, "Accepted", 202)
 }
 
 func (this *docs) GET(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +123,37 @@ func (this *docs) GET(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Not Found", 404)
 			return
 		}
+	} else if r.FormValue("list") == "true" {
+		if this.Session.Confirm(r.FormValue("session")) == false {
+			http.Error(w, "Forbidden", 403)
+			return
+		}
+		who, err := this.Session.Whos(r.FormValue("session"));
+		type document struct {
+			Account int64
+			Path string
+			Data string
+			Created int64
+			Updated int64
+		}
+		var documents []document
+		rows, err := this.Database.Query("SELECT account, path, data, created, updated FROM document WHERE account = ?;", who)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var doc document
+			err = rows.Scan(&doc.Account, &doc.Path, &doc.Data, &doc.Created, &doc.Updated)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+			documents = append(documents, doc)
+		}
+		b, _ := json.Marshal(documents)
+		io.WriteString(w, string(b))
 	} else {
 		path := strings.Replace(r.URL.Path, "/docs", "", -1)
 		var document struct {

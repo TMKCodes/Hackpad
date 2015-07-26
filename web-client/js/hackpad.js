@@ -1,5 +1,5 @@
 // This is Javascript browser code to talk with the server API.
-var fudocs = {
+var hackpad = {
 	account : {
 		create : function(username, password, email) {
 			var ret = false;
@@ -135,6 +135,9 @@ var fudocs = {
 			});
 			return ret;
 		},
+		save : function(session, name, file) {
+			return hackpad.doc.create(session, name, file);
+		},
 		change : function(session, name, change, at) {
 			var ret = false;
 			$.ajax({
@@ -149,6 +152,23 @@ var fudocs = {
 			}).done(function(data, textStatus, jqXHR) {
 				if(jqXHR.status == 200) {
 					ret = true;
+				}
+			});
+			return ret;
+		},
+		list : function(session) {
+			var ret = false;
+			$.ajax({
+				url: config.serverEndpoint + "/docs/" + "?list=true",
+				type: "GET",
+				async: false,
+				data : {
+					session : session
+				}
+			}).done(function(data, textStatus, jqXHR) {
+				if(jqXHR.status == 200) {
+					data = $.parseJSON(data);
+					ret = data;
 				}
 			});
 			return ret;
@@ -194,9 +214,9 @@ var fudocs = {
 			return ret;
 		},
 		move : function(session, name, newname) {
-			var file = fudocs.doc.get(name);
-			fudocs.doc.remove(session, name);
-			fudocs.doc.create(session, newname, file.Data);
+			var file = hackpad.doc.open(name);
+			hackpad.doc.remove(session, name);
+			hackpad.doc.create(session, newname, file.Data);
 		}
 	}
 }
