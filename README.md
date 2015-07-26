@@ -11,14 +11,14 @@ The Hackpad API server has been programmed with Go.
 Hackpad uses SQLite3 which means you can just open new database easily with the following command at the main folder of the project. 
 
 ```
-sqlite3 server/.fudocs.db < server/tables.sql
+sqlite3 server/.hackpad.db < server/tables.sql
 ```
 
-If you want to use another location from the server folder for storing the database file or another name for the database file then you also must do the corresponding changes in `server/.fudocs.conf`
+If you want to use another location from the server folder for storing the database file or another name for the database file then you also must do the corresponding changes in `server/.hackpad.conf`
 
 ### Server configuration
 
-The `server/.fudocs.conf` file contains the server configuration in json.
+The `server/.hackpad.conf` file contains the server configuration in json.
 
 | Parameter | Meaning                                 | defaults |
 |-----------|-----------------------------------------|----------|

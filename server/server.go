@@ -32,7 +32,7 @@ func newConfig(filename string) *configuration {
 }
 
 func main() {
-	config := newConfig(".fudocs.conf")
+	config := newConfig(".hackpad.conf")
 	database, err := sql.Open("sqlite3", config.Sqlite)
 	if err != nil {
 		log.Fatal("sql.Open: ", err);
