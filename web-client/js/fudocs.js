@@ -48,12 +48,9 @@ var fudocs = {
 		remove : function(session) {
 			var ret = false;
 			$.ajax({
-				url: config.serverEndpoint + "/account/",
+				url: config.serverEndpoint + "/account/" + "?session=" + session,
 				type: "DELETE",
 				async: false,
-				data : {
-					session : session
-				}
 			}).done(function(data, textStatus, jqXHR) {
 				if(jqXHR.status == 200) ret = true;
 			});
@@ -83,7 +80,7 @@ var fudocs = {
 			var ret = false;
 			$.ajax({
 				url: config.serverEndpoint + "/session/",
-				type: "POST",
+				type: "PUT",
 				async: false,
 				data : {
 					session : session
@@ -99,12 +96,9 @@ var fudocs = {
 		remove : function(session) {
 			var ret = false;
 			$.ajax({
-				url: config.serverEndpoint + "/session/",
-				type: "POST",
+				url: config.serverEndpoint + "/session/" + "?session=" + session,
+				type: "DELETE",
 				async: false,
-				data : {
-					session : session
-				}
 			}).done(function(data, textStatus, jqXHR) {
 				if(jqXHR.status == 200) {
 					ret = true;
@@ -113,7 +107,96 @@ var fudocs = {
 			return ret;
 		},
 	},
-	docs : {
-		
+	doc : {
+		generate : {
+			name : function(length) {
+				var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+				var name = "";
+				for(var i = 0; i < length; i++) {
+					name += characters.charAt(Math.floor(Math.random() * characters.length));
+				}
+				return name;
+			}
+		},
+		create : function(session, name, file) {
+			var ret = false;
+			$.ajax({
+				url: config.serverEndpoint + "/docs/" + name,
+				type: "POST",
+				async: false,
+				data : {
+					session : session,
+					file : file
+				}
+			}).done(function(data, textStatus, jqXHR) {
+				if(jqXHR.status == 201) {
+					ret = true;
+				}
+			});
+			return ret;
+		},
+		change : function(session, name, change, at) {
+			var ret = false;
+			$.ajax({
+				url: config.serverEndpoint + "/docs/" + name,
+				type: "PUT",
+				async: true,
+				data : {
+					session : session,
+					change : change,
+					at : at
+				}
+			}).done(function(data, textStatus, jqXHR) {
+				if(jqXHR.status == 200) {
+					ret = true;
+				}
+			});
+			return ret;
+		},
+		open : function(name) {
+			var ret = false;
+			$.ajax({
+				url: config.serverEndpoint + "/docs/" + name,
+				type: "GET",
+				async: false,
+			}).done(function(data, textStatus, jqXHR) {
+				if(jqXHR.status == 200) {
+					data = $.parseJSON(data);
+					ret = data;
+				}
+			});
+			return ret;
+		},
+		pull : function(name) {
+			var ret = false;
+			$.ajax({
+				url: config.serverEndpoint + "/docs/" + name + "?long-pull=true",
+				type: "GET",
+				async: false,
+			}).done(function(data, textStatus, jqXHR) {
+				if(jqXHR.status == 200) {
+					ret = true;
+				}
+			});
+			return ret;
+		},
+		remove : function(session, name) {
+			var ret = false;
+			$.ajax({
+				url: config.serverEndpoint + "/docs/" + name + "?session=" + session,
+				type: "DELETE",
+				async: false,
+			}).done(function(data, textStatus, jqXHR) {
+				if(jqXHR.status == 200) {
+					ret = true;
+				}
+			});
+			return ret;
+		},
+		move : function(session, name, newname) {
+			var file = fudocs.doc.get(name);
+			fudocs.doc.remove(session, name);
+			fudocs.doc.create(session, newname, file.Data);
+		}
 	}
 }

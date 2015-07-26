@@ -133,56 +133,89 @@ var application = {
 		}
 	},
 	editor : {
-		open : function() {
+		open : function(docname) {
 			$(document).attr("title", "Fudocs Editori");
+			if(typeof docname == "undefined") {
+				docname = fudocs.doc.generate.name(8);
+			}
 			if(application.allowHistoryPush == true) {
-				history.pushState({ application : "fudocs editor" }, "", application.hostname + "?application=editor");
+				history.pushState({ application : "fudocs editor", docname : docname }, "", application.hostname + "?application=editor&docname=" + docname);
 			} else {
 				application.allowHistoryPush = true;
 			}
+
 			$("body").prepend($.createDiv("editor-container"));
 			$("#editor-container").addClass("editor");
 			$("#editor-container").height($(window).height());
 			$("#editor-container").append($.createDiv("editor-menu-area"));
 			$("#editor-container").append($.createDiv("editor-edit-area"));
+			$("#editor-container").append($.createDiv("editor-hidden-area"));
 			$("#editor-container").append($.createDiv("editor-display-area"));
+			$("#editor-container").append($.createDiv("editor-bottom-area"));
 
 			// editor menu
-			
+			$("#editor-menu-area").append($.create("nav", "editor-navigation"));
+			$("#editor-navigation").append($.create("ul", "editor-navigation-root"));
+			$("#editor-navigation-root").append($.create("li", "editor-navigation-doc"));
+			$("#editor-navigation-doc").append($.create("a"));
+			$("#editor-navigation-doc > a").text("Document");
+			$("#editor-navigation-doc").append($.create("ul", "editor-navigation-doc-dropdown"));
+			$("#editor-navigation-doc-dropdown").append($.create("li", "editor-navigation-doc-new"));
+			$("#editor-navigation-doc-new").append($.create("a"));
+			$("#editor-navigation-doc-new > a").text("New");
 
 			// editor text area
 			$("#editor-edit-area").append($.create("textarea", "editor-textarea"));
+			$("#editor-textarea").attr("placeholder", "What story do you want to write today?");
+
+			if(typeof docname != "undefined") {
+				var doc = fudocs.doc.open(docname);
+				if(doc == false) {
+					if(fudocs.doc.create($.cookie("session"), docname, "") == true) {
+
+					} else {
+						alert("Failed to open or create the document.");
+					}
+				}
+			}
+
+			// events
+			$("#editor-navigation-doc-new > a").click(function(evt) {
+				application.editor.close();
+				// create a new doc in the server and generate placeholder name
+				// open the doc
+				application.editor.open(/*docname*/);
+			});
 
 			$("#editor-textarea").on("input", function(evt) {
-				var display = $("#editor-display-area").html();
+				var hidden = $("#editor-hidden-area").html();
 				var editor = $(this).val();
-				if(editor.length > display.length) {
+				if(editor.length > hidden.length) {
 					for(var i = 0; i < editor.length; i++) {
-						if(editor[i] != display[i]) {
-							var length = editor.length - display.length;
+						if(editor[i] != hidden[i]) {
+							var length = editor.length - hidden.length;
 							var changed = "";
 							for(var x = 0; x < length; x++) {
 								changed += editor[i+x];
 							}
-							// here send changed to server
-							console.log("+" + changed);
+							fudocs.doc.change($.cookie("session"), docname, "+" + changed, i);
 							break;
 						}
 					}
-				} else if(editor.length < display.length) {
-					for(var i = 0; i < display.length; i++) {
-						if(editor[i] != display[i]) {
-							var length = display.length - editor.length;
+				} else if(editor.length < hidden.length) {
+					for(var i = 0; i < hidden.length; i++) {
+						if(editor[i] != hidden[i]) {
+							var length = hidden.length - editor.length;
 							var changed = "";
 							for(var x = 0; x < length; x++) {
-								changed += display[i+x];
+								changed += hidden[i+x];
 							}
-							// here send changed to server
-							console.log("-" + changed);
+							fudocs.doc.change($.cookie("session"), docname, "-" + changed, i);
 							break;
 						}
 					}
 				}
+				$("#editor-hidden-area").html($(this).val());
 				var converter = new showdown.Converter(),
 					text = $(this).val(),
 					html = converter.makeHtml(text);

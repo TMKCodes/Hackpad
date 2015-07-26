@@ -38,10 +38,6 @@ func (this *fudocs) Handler(w http.ResponseWriter, r  *http.Request) {
 
 func (this *fudocs) POST(w http.ResponseWriter, r *http.Request) {
 	// confirm that the session key is valid
-	if r.FormValue("file") == "" {
-		http.Error(w, "Bad Request", 400)
-		return
-	}
 	if this.Session.Confirm(r.FormValue("session")) == false {
 		http.Error(w, "Forbidden", 403)
 		return
@@ -148,19 +144,19 @@ func (this *fudocs) GET(w http.ResponseWriter, r *http.Request) {
 func (this *fudocs) PUT(w http.ResponseWriter, r *http.Request) {
 	// confirm that the session key is valid and confirm that the session use is owner of the file
 	if r.FormValue("change") == "" {
-		http.Error(w, "Bad Request", 400)
+		http.Error(w, "Bad Request (Change key was empty)", 400)
 		return
 	}
 	if r.FormValue("at") == "" {
-		http.Error(w, "Bad Request", 400)
+		http.Error(w, "Bad Request (At key was empty)", 400)
 		return
 	}
 	if r.FormValue("session") == "" {
-		http.Error(w, "Bad Request", 400)
+		http.Error(w, "Bad Request (Session key was empty)", 400)
 		return
 	}
 	if this.Session.Confirm(r.FormValue("session")) == false {
-		http.Error(w, "Forbidden", 403)
+		http.Error(w, "Forbidden (Could not confirm session)", 403)
 		return
 	}
 	who, err := this.Session.Whos(r.FormValue("session"))
@@ -188,11 +184,11 @@ func (this *fudocs) PUT(w http.ResponseWriter, r *http.Request) {
 
 func (this *fudocs) DELETE(w http.ResponseWriter, r *http.Request) {
 	if r.FormValue("session") == "" {
-		http.Error(w, "Bad Request", 400)
+		http.Error(w, "Bad Request (Session key was empty)", 400)
 		return
 	}
 	if this.Session.Confirm(r.FormValue("session")) == false {
-		http.Error(w, "Forbidden", 403)
+		http.Error(w, "Forbidden (Could not confirm session)", 403)
 		return
 	}
 	who, err := this.Session.Whos(r.FormValue("session"))
@@ -207,7 +203,7 @@ func (this *fudocs) DELETE(w http.ResponseWriter, r *http.Request) {
 	}
 	err = this.Database.QueryRow("SELECT * FROM document WHERE path = ?;", path).Scan(&document.ID, &document.Account, &document.Path, &document.Data, &document.Created, &document.Updated)
 	if err == sql.ErrNoRows {
-		http.Error(w, "Not Found", 404)
+		http.Error(w, "Not Found (Could not find the document)", 404)
 		return
 	}
 	if err != nil {
@@ -223,7 +219,7 @@ func (this *fudocs) DELETE(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "OK", 200)
 		return
 	} else {
-		http.Error(w, "Forbidden", 403)
+		http.Error(w, "Forbidden (The document is not yours to delete)", 403)
 		return
 	}
 }
