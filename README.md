@@ -29,6 +29,15 @@ The `server/.hackpad.conf` file contains the server configuration in json.
 | Sqlite    | SQLite3 database file                   | session  |
 
 
+### Running the server
+
+The server has been programmed with Go and it will return the web client at HTTPAddr location. You can start the server with the following command
+
+```
+go run server.go docs.go session.go account.go
+```
+
+You can also build the server and run it with the compiled file, but I like using go run for testing purposes.
 
 ### Account
 
@@ -55,4 +64,5 @@ The `server/.hackpad.conf` file contains the server configuration in json.
 | PUT    | /docs/name                | session | change  |    | {"Session":"MXx8eGh4S1FGRGFGcExTakZiY1hvRUZmUnNX"}                                                                       |
 | GET    | /docs/name                |         |         |    | {"Account":1,"Path":"/hello_world","Data":"Testing This file system creation","Created":1434932579,"Updated":1434932579} |
 | GET    | /docs/name?long-pull=true |         |         |    | {"ID":1,"Account":1,"Document":1,"Change":"+New Change","At":6,"Timestamp":1434932683}                                   |
+| GET    | /docs/name?list=true      | session |         |    |                                                                                                                          |   
 | DELETE | /docs/                    | session |         |    | OK 200                                                                                                                   |
