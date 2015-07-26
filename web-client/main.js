@@ -134,6 +134,7 @@ var application = {
 	},
 	editor : {
 		open : function(docname) {
+			showdown.setOption("tables", true);
 			$(document).attr("title", "Hackpad Editori");
 			if(typeof docname == "undefined") {
 				docname = hackpad.doc.generate.name(8);
@@ -175,6 +176,9 @@ var application = {
 			$("#editor-navigation-doc-dropdown").append($.create("li", "editor-navigation-doc-save-as"));
 			$("#editor-navigation-doc-save-as").append($.create("a"));
 			$("#editor-navigation-doc-save-as > a").text("Save as");
+			$("#editor-navigation-root").append($.create("li", "editor-navigation-help"));
+			$("#editor-navigation-help").append($.create("a"));
+			$("#editor-navigation-help > a").text("Help");
 
 			// editor text area
 			$("#editor-edit-area").append($.create("textarea", "editor-textarea"));
@@ -203,21 +207,21 @@ var application = {
 			});
 
 			$("#editor-navigation-doc-open > a").click(function(evt) {
-				$("#file-selector").remove();
-				$("#editor-container").append($.create("div", "file-selector"));
+				$("#editor-popup-area").remove();
+				$("#editor-container").append($.create("div", "editor-popup-area"));
 				var docs = hackpad.doc.list($.cookie("session"));
-				$("#file-selector").append($.create("select", "file-selector-docs"));
-				$("#file-selector-docs").attr("multiple", "multiple");
+				$("#editor-popup-area").append($.create("select", "editor-popup-area-docs"));
+				$("#editor-popup-area-docs").attr("multiple", "multiple");
 				for(var i in docs) {
 					var option = $.create("option");
 					$(option).val(docs[i].Path.substring(1));
 					$(option).text(docs[i].Path.substring(1));
-					$("#file-selector-docs").append(option);
+					$("#editor-popup-area-docs").append(option);
 				}
-				$("#file-selector").append($.create("button", "file-selector-open-button"));
-				$("#file-selector-open-button").text("Open");
-				$("#file-selector-open-button").click(function(evt) {
-					var docname = $("#file-selector-docs").val();
+				$("#editor-popup-area").append($.create("button", "editor-popup-area-open-button"));
+				$("#editor-popup-area-open-button").text("Open");
+				$("#editor-popup-area-open-button").click(function(evt) {
+					var docname = $("#editor-popup-area-docs").val();
 					if(docname.length > 1) {
 						alert("You can only open 1 file at once.");
 					} else {
@@ -225,29 +229,29 @@ var application = {
 						application.editor.open(docname[0]);
 					}
 				});
-				$("#file-selector").append($.create("button", "file-selector-close-button"));
-				$("#file-selector-close-button").text("Close");
-				$("#file-selector-close-button").click(function(evt) {
-					$("#file-selector").remove();
+				$("#editor-popup-area").append($.create("button", "editor-popup-area-close-button"));
+				$("#editor-popup-area-close-button").text("Close");
+				$("#editor-popup-area-close-button").click(function(evt) {
+					$("#editor-popup-area").remove();
 				});
 			});
 
 			$("#editor-navigation-doc-remove > a").click(function(evt) {
-				$("#file-selector").remove();
-				$("#editor-container").append($.create("div", "file-selector"));
+				$("#editor-popup-area").remove();
+				$("#editor-container").append($.create("div", "editor-popup-area"));
 				var docs = hackpad.doc.list($.cookie("session"));
-				$("#file-selector").append($.create("select", "file-selector-docs"));
-				$("#file-selector-docs").attr("multiple", "multiple");
+				$("#editor-popup-area").append($.create("select", "editor-popup-area-docs"));
+				$("#editor-popup-area-docs").attr("multiple", "multiple");
 				for(var i in docs) {
 					var option = $.create("option");
 					$(option).val(docs[i].Path.substring(1));
 					$(option).text(docs[i].Path.substring(1));
-					$("#file-selector-docs").append(option);
+					$("#editor-popup-area-docs").append(option);
 				}
-				$("#file-selector").append($.create("button", "file-selector-remove-button"));
-				$("#file-selector-remove-button").text("Remove");
-				$("#file-selector-remove-button").click(function(evt) {
-					var docnames = $("#file-selector-docs").val();
+				$("#editor-popup-area").append($.create("button", "editor-popup-area-remove-button"));
+				$("#editor-popup-area-remove-button").text("Remove");
+				$("#editor-popup-area-remove-button").click(function(evt) {
+					var docnames = $("#editor-popup-area-docs").val();
 					for(var i in docnames) {
 						if(docname == docname[i]) {
 							alert("Can not remove currently open file.");
@@ -258,10 +262,10 @@ var application = {
 					application.editor.close();
 					application.editor.open(docname);
 				});
-				$("#file-selector").append($.create("button", "file-selector-close-button"));
-				$("#file-selector-close-button").text("Close");
-				$("#file-selector-close-button").click(function(evt) {
-					$("#file-selector").remove();
+				$("#editor-popup-area").append($.create("button", "editor-popup-area-close-button"));
+				$("#editor-popup-area-close-button").text("Close");
+				$("#editor-popup-area-close-button").click(function(evt) {
+					$("#editor-popup-area").remove();
 				});
 			});
 
@@ -270,24 +274,29 @@ var application = {
 			});
 
 			$("#editor-navigation-doc-save-as > a").click(function(evt) {
-				$("#file-selector").remove();
-				$("#editor-container").append($.create("div", "file-selector"));
-				$("#file-selector").append($.create("input", "file-selector-name-input"));
-				$("#file-selector").append($.create("button", "file-selector-save-as-button"));
-				$("#file-selector-save-as-button").text("Save as");
-				$("#file-selector").css("height", "0");
-				$("#file-selector-save-as-button").click(function(evt) {
-					var newname = $("#file-selector-name-input").val();
+				$("#editor-popup-area").remove();
+				$("#editor-container").append($.create("div", "editor-popup-area"));
+				$("#editor-popup-area").append($.create("input", "editor-popup-area-name-input"));
+				$("#editor-popup-area").append($.create("button", "editor-popup-area-save-as-button"));
+				$("#editor-popup-area-save-as-button").text("Save as");
+				$("#editor-popup-area").css("height", "0");
+				$("#editor-popup-area-save-as-button").click(function(evt) {
+					var newname = $("#editor-popup-area-name-input").val();
 					hackpad.doc.save($.cookie("session"), docname, $("#editor-textarea").val());
 					hackpad.doc.move($.cookie("session"), docname, newname);
 					application.editor.close();
 					application.editor.open(newname);
 				});
-				$("#file-selector").append($.create("button", "file-selector-close-button"));
-				$("#file-selector-close-button").text("Close");
-				$("#file-selector-close-button").click(function(evt) {
-					$("#file-selector").remove();
+				$("#editor-popup-area").append($.create("button", "editor-popup-area-close-button"));
+				$("#editor-popup-area-close-button").text("Close");
+				$("#editor-popup-area-close-button").click(function(evt) {
+					$("#editor-popup-area").remove();
 				});
+			});
+
+			$("#editor-navigation-help > a").click(function(evt) {
+				$("#editor-popup-area").remove();
+				$("#editor-container").append($.create("div", "editor-popup-area"));
 			});
 
 			$("#editor-textarea").on("input", function(evt) {

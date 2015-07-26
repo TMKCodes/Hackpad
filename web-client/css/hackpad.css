@@ -240,6 +240,33 @@ select:hover {
 	overflow-y: scroll;
 }
 
+.editor > #editor-display-area > table {
+	background-color: #fff;
+	border: 1px solid #ddd;
+	margin-bottom 1.5rem;
+	table-layout: auto;
+}
+
+.editor > #editor-display-area > table > thead {
+	background-color: #f5f5f5;
+}
+
+.editor > #editor-display-area > table > thead > tr > th {
+	color: #222;
+	display: table-cell;
+	line-height: 1.125rem;
+	font-size: 0.875rem;
+	font-weight: bold;
+	padding: 0.5rem 0.625rem 0.625rem 0.625rem;
+}
+
+.editor > #editor-display-area > table > tbody > tr > td {
+	line-height: 1.125rem;
+	font-size: 0.875rem;
+	padding: 0.5625rem 0.625rem;
+	text-align: left;
+}
+
 .editor > #editor-display-area pre {
 	white-space: pre-wrap;
 	word-wrap: break-word;
