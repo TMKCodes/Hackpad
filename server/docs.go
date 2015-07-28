@@ -2,9 +2,12 @@ package main
 
 import (
 	"io"
+	"fmt"
 	"time"
+	"bufio"
 	"strings"
 	"net/http"
+	"io/ioutil"
 	"database/sql"
 	"encoding/json"
 	_ "github.com/mattn/go-sqlite3"
@@ -43,28 +46,68 @@ func (this *docs) POST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	who, err := this.Session.Whos(r.FormValue("session"));
-	path := strings.Replace(r.URL.Path, "/docs", "", -1)
-	var document int64
-	err = this.Database.QueryRow("SELECT id FROM document WHERE path = ?;", path).Scan(&document)
-	if err == sql.ErrNoRows {
-		_, err = this.Database.Exec("INSERT INTO document (account, path, data, created, updated) VALUES (?, ?, ?, ?, ?);", who, path, r.FormValue("file"), time.Now().Unix(), time.Now().Unix())
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	if r.FormValue("create") == "true" {
+		path := strings.Replace(r.URL.Path, "/docs", "", -1)
+		var document int64
+		err = this.Database.QueryRow("SELECT id FROM document WHERE path = ?;", path).Scan(&document)
+		if err == sql.ErrNoRows {
+			_, err = this.Database.Exec("INSERT INTO document (account, path, data, created, updated) VALUES (?, ?, ?, ?, ?);", who, path, r.FormValue("file"), time.Now().Unix(), time.Now().Unix())
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+			http.Error(w, "Created", 201)
+			return
+		}
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
-		http.Error(w, "Created", 201)
-		return
+		_, err = this.Database.Exec("UPDATE document SET data = ?, updated = ? WHERE path = ?;", r.FormValue("file"), time.Now().Unix(), path)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		http.Error(w, "Accepted", 202)
+	} else {
+		r.ParseMultipartForm(32 << 20)
+		file, header, err := r.FormFile("import")
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		defer file.Close()
+		if(strings.Contains(header.Filename, ".md") == false) {
+			http.Error(w, "Wrong filetype", 400)
+			return
+		}
+		reader := bufio.NewReader(file)
+		contents, err := ioutil.ReadAll(reader)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		header.Filename = strings.Replace(header.Filename, ".md", "", -1)
+		header.Filename = fmt.Sprint("/", header.Filename)
+		var document int64
+		err = this.Database.QueryRow("SELECT id FROM document WHERE path = ?;", header.Filename).Scan(&document)
+		if err == sql.ErrNoRows {
+			_, err = this.Database.Exec("INSERT INTO document (account, path, data, created, updated) VALUES (?, ?, ?, ?, ?);", who, header.Filename, string(contents), time.Now().Unix(), time.Now().Unix())
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+			http.Error(w, "Created", 201)
+			return
+		} else if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
 	}
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	_, err = this.Database.Exec("UPDATE document SET data = ?, updated = ? WHERE path = ?;", r.FormValue("file"), time.Now().Unix(), path)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	http.Error(w, "Accepted", 202)
 }
 
 func (this *docs) GET(w http.ResponseWriter, r *http.Request) {

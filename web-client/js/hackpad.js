@@ -126,7 +126,8 @@ var hackpad = {
 				async: false,
 				data : {
 					session : session,
-					file : file
+					file : file,
+					create : "true"
 				}
 			}).done(function(data, textStatus, jqXHR) {
 				if(jqXHR.status == 201) {

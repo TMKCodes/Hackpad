@@ -284,7 +284,7 @@ select:hover {
 	float: left;
 }
 
-.editor > #file-selector {
+.editor > #editor-popup-area {
 	position: absolute;
 	z-index: 500;
 	width: 50%;
@@ -296,7 +296,7 @@ select:hover {
 	border: 1px solid #c2c2c2;
 }
 
-.editor > #file-selector > select {
+.editor > #editor-popup-area > select {
 	height: calc(100% - 30px);
 }
 

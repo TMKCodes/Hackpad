@@ -176,6 +176,12 @@ var application = {
 			$("#editor-navigation-doc-dropdown").append($.create("li", "editor-navigation-doc-save-as"));
 			$("#editor-navigation-doc-save-as").append($.create("a"));
 			$("#editor-navigation-doc-save-as > a").text("Save as");
+			$("#editor-navigation-doc-dropdown").append($.create("li", "editor-navigation-doc-export"));
+			$("#editor-navigation-doc-export").append($.create("a"));
+			$("#editor-navigation-doc-export > a").text("Export");
+			$("#editor-navigation-doc-dropdown").append($.create("li", "editor-navigation-doc-import"));
+			$("#editor-navigation-doc-import").append($.create("a"));
+			$("#editor-navigation-doc-import > a").text("Import");
 			$("#editor-navigation-root").append($.create("li", "editor-navigation-help"));
 			$("#editor-navigation-help").append($.create("a"));
 			$("#editor-navigation-help > a").text("Help");
@@ -201,6 +207,24 @@ var application = {
 			}
 
 			// events
+			$("#editor-navigation-doc-import > a").upload({
+					name: 'import',
+					action: 'docs/',
+					enctype : 'multipart/form-data',
+					params: { session : $.cookie("session") },
+					autoSubmit: true,
+					onComplete : function(response) {
+						if(response == "Wrong filetype") {
+							alert("You can only import markdown files ending with .md");
+						}
+					}
+			});
+
+			$("#editor-navigation-help > a").click(function(evt) {
+				application.editor.close();
+				application.editor.open("help");
+			});
+
 			$("#editor-navigation-doc-new > a").click(function(evt) {
 				application.editor.close();
 				application.editor.open();
@@ -292,11 +316,6 @@ var application = {
 				$("#editor-popup-area-close-button").click(function(evt) {
 					$("#editor-popup-area").remove();
 				});
-			});
-
-			$("#editor-navigation-help > a").click(function(evt) {
-				$("#editor-popup-area").remove();
-				$("#editor-container").append($.create("div", "editor-popup-area"));
 			});
 
 			$("#editor-textarea").on("input", function(evt) {
