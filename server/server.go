@@ -44,6 +44,8 @@ func main() {
 	http.HandleFunc("/docs/", fudocs.Handler)
 	account := newAccount(database, session)
 	http.HandleFunc("/account/", account.Handler)
+	clock := newClock(database, session)
+	http.HandleFunc("/clock/", clock.Handler)
 	if config.CertFile == "" && config.KeyFile == "" {
 		http.ListenAndServe(config.HTTPAddr, nil)
 	} else {

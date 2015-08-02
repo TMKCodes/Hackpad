@@ -36,28 +36,28 @@ func (this *session) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (this *session) Confirm(session string) bool {
+func (this *session) Confirm(session string) string {
 	decoded, err := base64.StdEncoding.DecodeString(session)
 	if err != nil {
-		return false
+		return err.Error()
 	}
 	data := strings.Split(string(decoded), "||")
 	var key string
 	id, err := strconv.ParseInt(data[0], 10, 64);
 	if err != nil {
-		return false;
+		return err.Error()
 	}
 	err = this.Database.QueryRow("SELECT key FROM session WHERE id = ?;", id).Scan(&key)
 	if err == sql.ErrNoRows {
-		return false
+		return err.Error()
 	}
 	if err != nil {
-		return false
+		return err.Error()
 	}
-	if key == data[1] {
-		return true
+	if key == data[2] {
+		return "true"
 	} else {
-		return false
+		return "false"
 	}
 }
 
@@ -71,7 +71,8 @@ func (this *session) Generate(n int) string {
 }
 
 func (this *session) Whos(session string) (int64, error) {
-	if this.Confirm(session) == false {
+	res := this.Confirm(session)
+	if res != "true" {
 		return 0, errors.New("Failed to confirm session.")
 	}
 	decoded, err := base64.StdEncoding.DecodeString(session)
@@ -80,7 +81,7 @@ func (this *session) Whos(session string) (int64, error) {
 	}
 	data := strings.Split(string(decoded), "||")
 	var account int64
-	err = this.Database.QueryRow("SELECT account FROM session WHERE id = ? AND key = ?;", data[0], data[1]).Scan(&account)
+	err = this.Database.QueryRow("SELECT account FROM session WHERE id = ? AND key = ?;", data[0], data[2]).Scan(&account)
 	if err != nil {
 		return 0, err
 	}
@@ -132,7 +133,7 @@ func (this *session) POST(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", 500)
 		return
 	}
-	result.Session = base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{strconv.FormatInt(session, 10), "||", key}, "")))
+	result.Session = base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{strconv.FormatInt(session, 10), "||", strconv.FormatInt(account, 10), "||", key}, "")))
 	b, _ := json.Marshal(result)
 	io.WriteString(w, string(b))
 }
@@ -143,7 +144,8 @@ func (this *session) PUT(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request, r.FormValue(\"session\")", 400)
 		return
 	}
-	if this.Confirm(r.FormValue("session")) == false {
+	res := this.Confirm(r.FormValue("session"))
+	if res != "true" {
 		http.Error(w, "Not Found, this.Confirm(r.FormValue(\"session\")", 404)
 		return
 	}
@@ -179,8 +181,9 @@ func (this *session) DELETE(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	if this.Confirm(r.FormValue("session")) == false {
-		http.Error(w, "Not Found", 404)
+	res := this.Confirm(r.FormValue("session"))
+	if res != "true" {
+		http.Error(w, "Not Found, this.Confirm(r.FormValue(\"session\")", 404)
 		return
 	}
 	decoded, err := base64.StdEncoding.DecodeString(r.FormValue("session"))

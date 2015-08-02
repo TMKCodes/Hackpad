@@ -57,7 +57,7 @@ func (this *account) POST(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = this.Database.Exec("INSERT INTO account (username, password, email) VALUES (?, ?, ?);", r.FormValue("username"), string(password), r.FormValue("email"))
 	if err != nil {
-		http.Error(w, "Internal Server Error, this.Database.Exec", 500)
+		http.Error(w, "Internal Server Error, this.Database.Exec" + err.Error(), 500)
 		return
 	}
 	http.Error(w, "OK", 200)
@@ -93,8 +93,9 @@ func (this *account) PUT(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	if this.Session.Confirm(r.FormValue("session")) == false {
-		http.Error(w, "Forbidden", 403)
+	res := this.Session.Confirm(r.FormValue("session"))
+	if res != "true" {
+		http.Error(w, "Not Found, this.Confirm(r.FormValue(\"session\")", 404)
 		return
 	}
 	if r.FormValue("username") == "" {
@@ -132,8 +133,9 @@ func (this *account) DELETE(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	if this.Session.Confirm(r.FormValue("session")) == false {
-		http.Error(w, "Forbidden", 403)
+	res := this.Session.Confirm(r.FormValue("session"))
+	if res != "true" {
+		http.Error(w, "Not Found, this.Confirm(r.FormValue(\"session\")", 404)
 		return
 	}
 	who, err := this.Session.Whos(r.FormValue("session"));

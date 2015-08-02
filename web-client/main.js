@@ -145,6 +145,11 @@ var application = {
 				application.allowHistoryPush = true;
 			}
 
+			// update clock based on server time.
+			setInterval(function() {
+				hackpad.clock.get();
+			}, 60000);
+
 			$("body").prepend($.createDiv("editor-container"));
 			$("#editor-container").addClass("editor");
 			$("#editor-container").height($(window).height());
@@ -157,6 +162,13 @@ var application = {
 			// editor menu
 			$("#editor-menu-area").append($.create("nav", "editor-navigation"));
 			$("#editor-navigation").append($.create("ul", "editor-navigation-root"));
+			$("#editor-navigation-root").append($.create("li", "editor-navigation-hackpad"));
+			$("#editor-navigation-hackpad").append($.create("a"));
+			$("#editor-navigation-hackpad > a").text("Hackpad");
+			$("#editor-navigation-hackpad").append($.create("ul", "editor-navigation-hackpad-dropdown"));
+			$("#editor-navigation-hackpad-dropdown").append($.create("li", "editor-navigation-hackpad-logout"));
+			$("#editor-navigation-hackpad-logout").append($.create("a"));
+			$("#editor-navigation-hackpad-logout > a").text("Kirjaudu ulos");
 			$("#editor-navigation-root").append($.create("li", "editor-navigation-doc"));
 			$("#editor-navigation-doc").append($.create("a"));
 			$("#editor-navigation-doc > a").text("Document");
@@ -211,11 +223,16 @@ var application = {
 					name: 'import',
 					action: 'docs/',
 					enctype : 'multipart/form-data',
-					params: { session : $.cookie("session") },
+					params: { session : $.cookie("session"), timestamp : Date.now() },
 					autoSubmit: true,
 					onComplete : function(response) {
+						console.log(response);
 						if(response == "Wrong filetype") {
 							alert("You can only import markdown files ending with .md");
+						} else {
+							response = $.parseJSON(response);
+							application.editor.close();
+							application.editor.open(response.Path.replace("/", ""));
 						}
 					}
 			});
@@ -277,14 +294,10 @@ var application = {
 				$("#editor-popup-area-remove-button").click(function(evt) {
 					var docnames = $("#editor-popup-area-docs").val();
 					for(var i in docnames) {
-						if(docname == docname[i]) {
-							alert("Can not remove currently open file.");
-							continue;
-						}
 						var removed = hackpad.doc.remove($.cookie("session"), docnames[i]);
 					}
 					application.editor.close();
-					application.editor.open(docname);
+					application.editor.open("help");
 				});
 				$("#editor-popup-area").append($.create("button", "editor-popup-area-close-button"));
 				$("#editor-popup-area-close-button").text("Close");
@@ -319,29 +332,30 @@ var application = {
 			});
 
 			$("#editor-textarea").on("input", function(evt) {
-				var hidden = $("#editor-hidden-area").html();
-				var editor = $(this).val();
-				if(editor.length > hidden.length) {
-					for(var i = 0; i < editor.length; i++) {
-						if(editor[i] != hidden[i]) {
-							var length = editor.length - hidden.length;
-							var changed = "";
+				// get change.
+				var written = $(this).val();
+				var displayed = $("#editor-hidden-area").val();
+				if(written > displayed) {
+					for(var i = 0; i < written.length; i++) {
+						if(written[i] != displayed[i]) {
+							var length = written.length - displayed.length;
+							var changed = "+";
 							for(var x = 0; x < length; x++) {
-								changed += editor[i+x];
+								changed += written[i+x];
 							}
-							hackpad.doc.change($.cookie("session"), docname, "+" + changed, i);
+							hackpad.doc.change($.cookie("session"), docname, changed, i, hackpad.clock.timestamp);
 							break;
 						}
 					}
-				} else if(editor.length < hidden.length) {
-					for(var i = 0; i < hidden.length; i++) {
-						if(editor[i] != hidden[i]) {
-							var length = hidden.length - editor.length;
-							var changed = "";
+				} else if (written < displayed) {
+					for(var i = 0; i < displayed.length; i++) {
+						if(displayed[i] != displayed[i]) {
+							var length = displayed.length - written.length;
+							var changed = "-";
 							for(var x = 0; x < length; x++) {
-								changed += hidden[i+x];
+								changed += displayed[i+x];
 							}
-							hackpad.doc.change($.cookie("session"), docname, "-" + changed, i);
+							hackpad.doc.change($.cookie("session"), docname, changed, i, hackpad.clock.timestamp);
 							break;
 						}
 					}
@@ -352,6 +366,8 @@ var application = {
 					html = converter.makeHtml(text);
 				$("#editor-display-area").html(html);
 			});
+
+
 		},
 		close : function() {
 			$("#editor-container").remove();

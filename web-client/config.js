@@ -1,3 +1,3 @@
 var config = {
-	serverEndpoint : "http://localhost:10080"
+	serverEndpoint : "http://192.168.1.3:10080"
 }

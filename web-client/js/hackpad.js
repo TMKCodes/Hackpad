@@ -107,7 +107,36 @@ var hackpad = {
 			return ret;
 		},
 	},
+	clock : {
+		add : 0,
+		timestamp : function() {
+			time = Date.now() + hackpad.clock.add;
+			return time;
+		},
+		get : function() {
+			startTime = Date.now();
+			$.ajax({
+				url: config.serverEndpoint + "/clock/",
+				type: "GET",
+				async: false,
+				data : { }
+			}).done(function(data, textStatus, jqXHR) {
+				endTime = Date.now();
+				runTime = endTime - startTime;
+				if(jqXHR.status == 200) {
+					serverTime = Math.floor(parseInt(data) / 1000000);
+					console.log(serverTime);
+					console.log(runTime);
+					console.log(Date.now());
+					hackpad.clock.add = serverTime - Date.now() + runTime;
+					console.log(hackpad.clock.add);
+				}
+			});
+		}
+	},
 	doc : {
+		current : null,
+		updates : [],
 		generate : {
 			name : function(length) {
 				var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -127,10 +156,13 @@ var hackpad = {
 				data : {
 					session : session,
 					file : file,
-					create : "true"
+					create : "true",
+					timestamp : Date.now()
 				}
 			}).done(function(data, textStatus, jqXHR) {
 				if(jqXHR.status == 201) {
+					ret = true;
+				} else if (jqXHR.status == 202) {
 					ret = true;
 				}
 			});
@@ -138,24 +170,6 @@ var hackpad = {
 		},
 		save : function(session, name, file) {
 			return hackpad.doc.create(session, name, file);
-		},
-		change : function(session, name, change, at) {
-			var ret = false;
-			$.ajax({
-				url: config.serverEndpoint + "/docs/" + name,
-				type: "PUT",
-				async: true,
-				data : {
-					session : session,
-					change : change,
-					at : at
-				}
-			}).done(function(data, textStatus, jqXHR) {
-				if(jqXHR.status == 200) {
-					ret = true;
-				}
-			});
-			return ret;
 		},
 		list : function(session) {
 			var ret = false;
@@ -188,18 +202,21 @@ var hackpad = {
 			});
 			return ret;
 		},
-		pull : function(name) {
-			var ret = false;
+		change : function(session, name, change, at, timestamp) {
 			$.ajax({
-				url: config.serverEndpoint + "/docs/" + name + "?long-pull=true",
-				type: "GET",
-				async: false,
-			}).done(function(data, textStatus, jqXHR) {
-				if(jqXHR.status == 200) {
-					ret = true;
+				url: config.serverEndpoint + "/docs/" + name,
+				type: "PUT",
+				async: true,
+				data : {
+					session : session,
+					change : change,
+					at : at,
+					timestamp : timestamp
 				}
 			});
-			return ret;
+		},
+		pull : function(session, name, timestamp) {
+			
 		},
 		remove : function(session, name) {
 			var ret = false;

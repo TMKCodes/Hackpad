@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS document (
 	account INTEGER NOT NULL,
 	path TEXT NOT NULL,
 	data BLOB NOT NULL,
-	created INTEGER NOT NULL,
-	updated INTEGER NOT NULL,
+	created TEXT NOT NULL,
+	updated TEXT NOT NULL,
 	FOREIGN KEY (account) REFERENCES account(id)
 );
 
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS history (
 	document INTEGER NOT NULL,
 	change TEXT NOT NULL,
 	at INTEGER NOT NULL,
-	timestamp INTEGER NOT NULL,
+	timestamp TEXT NOT NULL,
 	FOREIGN KEY (account) REFERENCES account(id)
 	FOREIGN KEY (document) REFERENCES document(id)
 
